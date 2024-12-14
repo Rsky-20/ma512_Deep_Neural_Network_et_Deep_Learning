@@ -16,11 +16,11 @@ nltk.download("stopwords")
 nltk.download("punkt")
 
 # --- Configuration ---
-MODEL_NAME = "bert-base-uncased" #"./climatebert-fact-checking"
+MODEL_NAME = "bert-base-uncased"  # Remplacez par "amandakonet/climatebert-fact-checking" si vous avez accès
 LABELS = ["SUPPORTS", "NOT_ENOUGH_INFO", "REFUTES", "DISPUTED"]
 ID2LABEL = {i: label for i, label in enumerate(LABELS)}
 LABEL2ID = {label: i for i, label in enumerate(LABELS)}
-EPOCHS = 3
+EPOCHS = 1
 BATCH_SIZE = 16
 LEARNING_RATE = 5e-5
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -114,7 +114,7 @@ training_args = TrainingArguments(
     save_strategy="epoch",
     logging_dir="./logs",
     load_best_model_at_end=True,
-    logging_steps=10,
+    logging_steps=5,
     save_total_limit=2,
     report_to="none",  # Désactiver les rapports vers wandb ou autres par défaut
     fp16=True if DEVICE == "cuda" else False
@@ -155,21 +155,35 @@ try:
 except Exception as e:
     print("Erreur pendant l'évaluation :", e)
 
-# Exemple de prédiction
-classifier = pipeline("text-classification", model=model, tokenizer=tokenizer)
 
-example_texts = [
-    ("Global warming is driving polar bears toward extinction.", 
-     "Rising global temperatures contribute to habitat destruction."),
-    ("The sun has gone into lockdown.", 
-     "A rare solar event is predicted to impact Earth's climate."),
-    ("The polar bear population has been growing.", 
-     "Studies show polar bear populations are declining.")
+# Exemple de prédiction
+def predict_claims(claims):
+    model.to(DEVICE)  # Déplacer le modèle sur l'appareil spécifié
+    inputs = []
+    for claim in claims:
+        inputs.append(
+            tokenizer(
+                claim,
+                padding="max_length",
+                truncation=True,
+                max_length=128,
+                return_tensors="pt"
+            ).to(DEVICE)  # Déplacer les entrées sur l'appareil
+        )
+    model.eval()
+    with torch.no_grad():
+        for i, input_data in enumerate(inputs):
+            logits = model(**input_data).logits
+            predictions = torch.argmax(logits, dim=-1).item()
+            print(f"Claim: {claims[i]}")
+            print(f"Prédiction: {LABELS[predictions]}")
+
+example_claims = [
+    "Global warming is driving polar bears toward extinction.",
+    "The sun has gone into lockdown.",
+    "The polar bear population has been growing."
 ]
 
-predictions = classifier(example_texts)
+predict_claims(example_claims)
 
-for (claim, evidence), pred in zip(example_texts, predictions):
-    print(f"Claim : {claim}")
-    print(f"Evidence : {evidence}")
-    print(f"Prédiction : {pred}")
+
