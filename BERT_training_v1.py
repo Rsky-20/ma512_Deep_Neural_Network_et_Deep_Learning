@@ -20,7 +20,7 @@ import os
 parser = argparse.ArgumentParser(description="Data loading configuration")
 parser.add_argument("--load_jsonl", action="store_true", help="Load data from a JSONL file via a URL")
 parser.add_argument("--load_parquet", action="store_true", help="Load data from a Parquet file")
-parser.add_argument("--epoch", type=int, default=5, help="Set the number of training epochs (default: 5)")
+parser.add_argument("--epoch", type=int, default=10, help="Set the number of training epochs (default: 5)")
 parser.add_argument("--batch_size", type=int, default=32, help="Set the batch size (default: 32)")
 
 args = parser.parse_args()
